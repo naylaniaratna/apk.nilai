@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NilaiKU - Aplikasi Nilai SMK</title>
+<style>
+body{font-family:Arial;background:#e0e7ff;margin:0;padding:15px}
+.card{background:white;padding:25px;border-radius:16px;max-width:950px;margin:20px auto;box-shadow:0 8px 25px rgba(0,0,0,.12)}
+input,select{padding:12px;margin:6px;border:1px solid #ccc;border-radius:10px;width:90%}
+button{padding:12px 18px;border:none;border-radius:10px;background:#4f46e5;color:white;font-weight:bold;cursor:pointer}
+table{width:100%;border-collapse:collapse;margin-top:15px}
+th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:13px}
+th{background:#4f46e5;color:white}
+#loginPage,#app{display:none}
+.materi{background:#f8fafc;padding:15px;border-radius:12px;border-left:5px solid #4f46e5;margin:10px 0}
+.badge{padding:3px 8px;border-radius:20px;color:white;font-size:12px}
+.k10{background:#10b981}.k11{background:#f59e0b}.k12{background:#ef4444}
+</style>
+</head>
+<body>
+
+<!-- 1. HALAMAN MATERI -->
+<div class="card" id="materiPage">
+<h1>📚 Aplikasi NilaiKU</h1>
+<h3>Sistem Manajemen Nilai Siswa SMK Kelas 10,11,12</h3>
+<div class="materi"><b>🎯 Tujuan:</b> Membantu guru mengelola nilai siswa dengan mudah.</div>
+<div class="materi"><b>📖 Fitur:</b><br>
+1. Database SQLite sekolah.db<br>
+2. Login Nama Guru Bebas (isi sendiri)<br>
+3. Kelas 10, 11, 12<br>
+4. Semua Mapel: MTK, Indo, Inggris, Produktif, PAI (INTEGER)<br>
+5. Guru bisa Edit/Hapus sendiri</div>
+<div class="materi"><b>🗄️ Tabel siswa:</b> nama TEXT, kelas INTEGER, mtk INTEGER, indo INTEGER, inggris INTEGER, produktif INTEGER, pai INTEGER, rata INTEGER</div>
+<center><br><button onclick="goLogin()" style="font-size:16px">➡️ MASUK SEBAGAI GURU</button></center>
+</div>
+
+<!-- 2. HALAMAN LOGIN - NAMA GURU ISI SENDIRI -->
+<div class="card" id="loginPage" style="max-width:420px;text-align:center">
+<h2>🔐 LOGIN GURU</h2>
+<p>Isi nama Anda sebagai guru</p>
+<input id="u" placeholder="Nama Guru (contoh: Bu Sari)"><br>
+<input id="p" type="password" placeholder="Password (123)"><br><br>
+<button onclick="login()" style="width:90%">MASUK</button><br><br>
+<button onclick="goMateri()" style="background:gray;width:90%">⬅️ Kembali ke Materi</button>
+<p style="font-size:11px;color:gray">Username: Nama Guru Bebas<br>Password: 123</p>
+</div>
+
+<!-- 3. DASHBOARD GURU -->
+<div class="card" id="app">
+<h2>Dashboard Guru - <span id="namaGuruTampil"></span> <button onclick="logout()" style="float:right;background:red">Logout</button></h2>
+<p>Kelola Semua Mapel Kelas 10,11,12</p>
+Nama Siswa: <input id="nama" placeholder="Nama Siswa" style="width:35%">
+Kelas: <select id="kelas" style="width:20%"><option>10</option><option>11</option><option selected>12</option></select><br>
+MTK: <input id="mtk" type="number" style="width:15%">
+Indo: <input id="indo" type="number" style="width:15%">
+Inggris: <input id="inggris" type="number" style="width:15%">
+Produktif: <input id="produktif" type="number" style="width:15%">
+PAI: <input id="pai" type="number" style="width:15%">
+<button onclick="simpan()">SIMPAN</button><br>
+Filter: <select id="fkelas" onchange="render()" style="width:30%"><option value="all">Semua Kelas</option><option value="10">Kelas 10</option><option value="11">Kelas 11</option><option value="12">Kelas 12</option></select>
+<table id="tbl"></table>
+</div>
+
+<script>
+let db=JSON.parse(localStorage.getItem('nilaiku_final')||'[]');
+let guruLogin="";
+function goLogin(){materiPage.style.display='none';loginPage.style.display='block';}
+function goMateri(){loginPage.style.display='none';materiPage.style.display='block';}
+function login(){
+  let n=u.value.trim();
+  if(!n) return alert('Isi nama guru dulu!');
+  if(p.value!=='123') return alert('Password salah! Pakai 123');
+  guruLogin=n; namaGuruTampil.innerText=n;
+  loginPage.style.display='none';app.style.display='block';render();
+}
+function logout(){app.style.display='none';materiPage.style.display='block';u.value='';p.value='';}
+function simpan(){
+  let nm=nama.value.trim(); if(!nm) return alert('Isi nama siswa!');
+  let d={nama:nm,kelas:kelas.value,mtk:+mtk.value||0,indo:+indo.value||0,inggris:+inggris.value||0,produktif:+produktif.value||0,pai:+pai.value||0};
+  d.rata=Math.round((d.mtk+d.indo+d.inggris+d.produktif+d.pai)/5);
+  db.push(d); nama.value=''; render();
+}
+function render(){
+  let f=fkelas.value;
+  let h='<tr><th>Nama</th><th>Kelas</th><th>MTK</th><th>Indo</th><th>Ing</th><th>Prod</th><th>PAI</th><th>Rata</th><th>Aksi</th></tr>';
+  db.forEach((s,i)=>{
+    if(f!=='all'&&s.kelas!=f) return;
+    h+=`<tr><td>${s.nama}</td><td><span class="badge k${s.kelas}">${s.kelas}</span></td><td>${s.mtk}</td><td>${s.indo}</td><td>${s.inggris}</td><td>${s.produktif}</td><td>${s.pai}</td><td><b>${s.rata}</b></td><td><button onclick="edit(${i})">Edit</button> <button onclick="hapus(${i})" style="background:red">Hapus</button></td></tr>`;
+  });
+  tbl.innerHTML=h; localStorage.setItem('nilaiku_final',JSON.stringify(db));
+}
+function hapus(i){if(confirm('hapus?')){db.splice(i,1);render();}}
+function edit(i){
+  let s=db[i];
+  let m=prompt('MTK '+s.nama,s.mtk); if(m===null) return;
+  let ind=prompt('Indo',s.indo); let ing=prompt('Inggris',s.inggris);
+  let pro=prompt('Produktif',s.produktif); let pa=prompt('PAI',s.pai); let kl=prompt('Kelas 10/11/12',s.kelas);
+  s.mtk=+m||0; s.indo=+ind||0; s.inggris=+ing||0; s.produktif=+pro||0; s.pai=+pa||0;
+  if(['10','11','12'].includes(kl)) s.kelas=kl;
+  s.rata=Math.round((s.mtk+s.indo+s.inggris+s.produktif+s.pai)/5); render();
+}
+</script>
+</body>
+</html>
