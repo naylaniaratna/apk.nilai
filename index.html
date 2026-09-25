@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NilaiKU</title>
+<style>
+body{font-family:Arial;background:#e0e7ff;margin:0;padding:12px}
+.card{background:white;padding:20px;border-radius:16px;max-width:1000px;margin:15px auto;box-shadow:0 8px 25px rgba(0,0,0,.12)}
+input,select{padding:10px;margin:4px;border:1px solid #ccc;border-radius:10px}
+button{padding:10px 14px;border:none;border-radius:10px;background:#4f46e5;color:white;font-weight:bold;cursor:pointer}
+table{width:100%;border-collapse:collapse;margin-top:12px} th,td{border:1px solid #ddd;padding:6px;text-align:center;font-size:12px} th{background:#4f46e5;color:white}
+#loginPage,#app{display:none}
+.tag{display:inline-block;background:#e0e7ff;color:#4f46e5;padding:6px 12px;border-radius:20px;margin:3px;font-weight:bold}
+</style></head><body>
+
+<div class="card" id="materiPage">
+<h1>📚 NilaiKU</h1>
+<p>Guru login pakai nama sendiri, bikin mapel sendiri.</p>
+<center><button onclick="goLogin()">➡️ MASUK SEBAGAI GURU</button></center>
+</div>
+
+<div class="card" id="loginPage" style="max-width:400px;text-align:center">
+<h2>LOGIN GURU</h2>
+<input id="u" placeholder="Nama Guru" style="width:85%"><br>
+<input id="p" type="password" placeholder="Password 123" style="width:85%"><br><br>
+<button onclick="login()" style="width:90%">MASUK</button>
+</div>
+
+<div class="card" id="app">
+<h2><span id="namaGuruTampil"></span> <button onclick="logout()" style="float:right;background:red">Logout</button></h2>
+
+<div style="background:#f5f3ff;padding:15px;border-radius:12px">
+<b>1. Buat Mapel Dulu (Guru Pilih Sendiri):</b><br>
+<div id="listMapel" style="min-height:30px;border:1px dashed #ccc;padding:10px;border-radius:8px;margin:8px 0">Belum ada mapel, tambah di bawah</div>
+<input id="newMapel" placeholder="Ketik nama mapel" style="width:60%"><button onclick="tambahMapel()">+ Tambah Mapel</button>
+</div>
+
+<br>
+<div style="background:#fffbeb;padding:15px;border-radius:12px">
+<b>2. Input Nilai Siswa:</b><br>
+Nama: <input id="nama" placeholder="Nama Siswa" style="width:40%">
+Kelas: <select id="kelas"><option>10</option><option>11</option><option selected>12</option></select>
+<div id="inputNilaiMapel" style="margin-top:10px"></div>
+<button onclick="simpan()" style="margin-top:10px;background:#10b981">SIMPAN</button>
+</div>
+
+<table id="tbl"></table>
+</div>
+
+<script>
+let db=JSON.parse(localStorage.getItem('nilaiku_kosong')||'[]');
+let mapels=JSON.parse(localStorage.getItem('nilaiku_kosong_mapel')||'[]');
+function goLogin(){materiPage.style.display='none';loginPage.style.display='block';}
+function login(){ if(!u.value.trim()) return alert('Isi nama guru!'); if(p.value!=='123') return alert('Pass 123'); namaGuruTampil.innerText=u.value; loginPage.style.display='none'; app.style.display='block'; renderMapel(); render();}
+function logout(){app.style.display='none';materiPage.style.display='block';}
+function tambahMapel(){ let m=newMapel.value.trim(); if(!m) return; mapels.push(m); newMapel.value=''; localStorage.setItem('nilaiku_kosong_mapel',JSON.stringify(mapels)); renderMapel(); render();}
+function hapusMapel(i){ mapels.splice(i,1); localStorage.setItem('nilaiku_kosong_mapel',JSON.stringify(mapels)); renderMapel(); render();}
+function renderMapel(){
+ if(mapels.length==0){ listMapel.innerHTML='Belum ada mapel'; inputNilaiMapel.innerHTML='<i style="color:red">Tambah mapel dulu di atas!</i>'; return;}
+ listMapel.innerHTML=mapels.map((m,i)=>`<span class="tag">${m} <span onclick="hapusMapel(${i})" style="color:red;cursor:pointer">×</span></span>`).join('');
+ inputNilaiMapel.innerHTML=mapels.map(m=>`${m}: <input id="val_${m}" type="number" style="width:60px">`).join(' ');
+}
+function simpan(){
+ if(mapels.length==0) return alert('Buat mapel dulu!');
+ let nm=nama.value.trim(); if(!nm) return alert('Isi nama siswa!');
+ let nilai={}; let tot=0; mapels.forEach(m=>{ let v=+document.getElementById('val_'+m).value||0; nilai[m]=v; tot+=v; });
+ let rata=Math.round(tot/mapels.length);
+ db.push({nama:nm,kelas:kelas.value,nilai:nilai,rata:rata}); nama.value=''; mapels.forEach(m=>document.getElementById('val_'+m).value=''); localStorage.setItem('nilaiku_kosong',JSON.stringify(db)); render();
+}
+function render(){
+ if(mapels.length==0){ tbl.innerHTML=''; return;}
+ let h='<tr><th>Nama</th><th>Kelas</th>'+mapels.map(m=>`<th>${m}</th>`).join('')+'<th>Rata</th><th>Aksi</th></tr>';
+ db.forEach((s,i)=>{ h+=`<tr><td>${s.nama}</td><td>${s.kelas}</td>`; mapels.forEach(m=>{h+=`<td>${s.nilai[m]??'-'}</td>`}); h+=`<td><b>${s.rata}</b></td><td><button onclick="db.splice(${i},1);localStorage.setItem('nilaiku_kosong',JSON.stringify(db));render()" style="background:red">Hapus</button></td></tr>`; });
+ tbl.innerHTML=h;
+}
+</script></body></html>
